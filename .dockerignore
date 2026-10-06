@@ -1,0 +1,11 @@
+.git
+.idea
+.vscode
+org
+**/target
+**/*.class
+**/*.log
+.env
+docker-compose.override.yml
+k6
+*.md
