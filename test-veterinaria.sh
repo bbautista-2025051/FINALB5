@@ -11,7 +11,7 @@
 # ============================================================
 set -u
 
-BASE_URL="${BASE_URL:-http://localhost:8090}"
+BASE_URL="${BASE_URL:-http://localhost:8088}"
 TMP_BODY="$(mktemp)"
 trap 'rm -f "$TMP_BODY"' EXIT
 
