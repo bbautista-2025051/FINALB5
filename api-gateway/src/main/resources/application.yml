@@ -1,0 +1,66 @@
+server:
+  port: 8080
+  shutdown: graceful
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      httpclient:
+        connect-timeout: 3000
+        response-timeout: 10s
+      routes:
+        - id: auth-service
+          uri: ${AUTH_SERVICE_URI:http://localhost:8081}
+          predicates:
+            - Path=/api/v1/auth/**
+        - id: user-service
+          uri: ${USER_SERVICE_URI:http://localhost:8082}
+          predicates:
+            - Path=/api/v1/usuarios/**
+        - id: mascota-service
+          uri: ${MASCOTA_SERVICE_URI:http://localhost:8083}
+          predicates:
+            - Path=/api/v1/mascotas/**
+        - id: cita-service
+          uri: ${CITA_SERVICE_URI:http://localhost:8084}
+          predicates:
+            - Path=/api/v1/citas/**
+        - id: expediente-service
+          uri: ${EXPEDIENTE_SERVICE_URI:http://localhost:8085}
+          predicates:
+            - Path=/api/v1/expedientes/**
+      globalcors:
+        add-to-simple-url-handler-mapping: true
+        cors-configurations:
+          '[/**]':
+            allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200,http://localhost:3000}
+            allowed-methods:
+              - GET
+              - POST
+              - PUT
+              - PATCH
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+            allowCredentials: true
+            maxAge: 3600
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
+
+management:
+  endpoints.web.exposure.include: health,info,metrics
+  endpoint.health.probes.enabled: true
+
+info:
+  app:
+    name: ${spring.application.name}
+    description: Punto unico de entrada de la API
+
+logging:
+  pattern:
+    level: "%5p [${spring.application.name:},%X{traceId:-}]"
+  level:
+    com.veterinaria: INFO
+    org.springframework.cloud.gateway: INFO
