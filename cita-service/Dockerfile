@@ -9,6 +9,14 @@ COPY mascota-service/pom.xml mascota-service/pom.xml
 COPY cita-service/pom.xml cita-service/pom.xml
 COPY expediente-service/pom.xml expediente-service/pom.xml
 
+COPY docker/certs/ /tmp/certs/
+RUN if [ -f /tmp/certs/root-ca.pem ]; then \
+        keytool -importcert -noprompt -trustcacerts -alias red-corporativa \
+        -file /tmp/certs/root-ca.pem -keystore "$JAVA_HOME/lib/security/cacerts" \
+        -storepass changeit; \
+    fi; \
+    rm -rf /tmp/certs
+
 RUN mvn -B -q -N install
 RUN mvn -B -q -pl cita-service -am dependency:go-offline -DskipTests
 
