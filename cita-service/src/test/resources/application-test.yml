@@ -1,0 +1,27 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:vet_citas;MODE=MySQL;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        jdbc.time_zone: UTC
+  sql:
+    init:
+      mode: never
+
+veterinaria:
+  security:
+    jwt:
+      secret: clave-secreta-de-prueba-suficientemente-larga-0123456789
+      expiration-ms: 3600000
+    internal-key: clave-interna-de-prueba
+
+logging:
+  level:
+    com.veterinaria: INFO
