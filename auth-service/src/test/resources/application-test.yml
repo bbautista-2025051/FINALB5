@@ -1,0 +1,13 @@
+veterinaria:
+  security:
+    jwt:
+      secret: clave-secreta-de-prueba-suficientemente-larga-0123456789
+      expiration-ms: 3600000
+    internal-key: clave-interna-de-prueba
+  clients:
+    user-service:
+      base-url: http://localhost:8082
+
+logging:
+  level:
+    com.veterinaria: INFO

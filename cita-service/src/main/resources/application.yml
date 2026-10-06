@@ -7,7 +7,7 @@ spring:
     name: cita-service
   datasource:
     url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/vet_citas?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=utf8mb4&rewriteBatchedStatements=true
-    username: ${IN5AM}
+    username: ${DB_USERNAME:vet}
     password: ${DB_PASSWORD}
     hikari:
       pool-name: cita-service-hikari
