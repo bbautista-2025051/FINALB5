@@ -28,7 +28,7 @@ veterinaria:
       expiration-ms: ${JWT_EXPIRATION:3600000}
   clients:
     user-service:
-      base-url: ${USER_SERVICE_URL:http://localhost:8082}
+      base-url: ${USER_SERVICE_URL:http://localhost:8083}
     connect-timeout-ms: 2000
     read-timeout-ms: 5000
 
