@@ -1,0 +1,39 @@
+server:
+  port: 8082
+  shutdown: graceful
+
+spring:
+  application:
+    name: auth-service
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
+
+springdoc:
+  api-docs.path: /v3/api-docs
+  swagger-ui.path: /swagger-ui.html
+
+management:
+  endpoints.web.exposure.include: health,info,metrics
+  endpoint.health.probes.enabled: true
+
+info:
+  app:
+    name: ${spring.application.name}
+    description: Registro, autenticacion y emision de JWT
+
+veterinaria:
+  security:
+    jwt:
+      secret: ${JWT_SECRET}
+      expiration-ms: ${JWT_EXPIRATION:3600000}
+  clients:
+    user-service:
+      base-url: ${USER_SERVICE_URL:http://localhost:8082}
+    connect-timeout-ms: 2000
+    read-timeout-ms: 5000
+
+logging:
+  pattern:
+    level: "%5p [${spring.application.name:},%X{traceId:-}]"
+  level:
+    com.veterinaria: INFO
