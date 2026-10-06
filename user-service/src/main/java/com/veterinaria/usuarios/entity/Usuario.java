@@ -43,6 +43,6 @@ public class Usuario {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "rol", nullable = false, length = 10)
-    @Check(constraint = "rol IN ('ADMIN', 'VET', 'CLIENTE')")
+    @Check(constraints = "rol IN ('ADMIN', 'VET', 'CLIENTE')")
     private Rol rol;
 }

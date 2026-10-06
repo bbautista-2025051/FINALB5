@@ -1,7 +1,7 @@
-package com.veterinaria.usuarios.security;
+package com.veterinaria.citas.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.veterinaria.usuarios.exception.ApiError;
+import com.veterinaria.citas.exception.ApiError;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
