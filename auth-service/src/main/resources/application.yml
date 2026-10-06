@@ -1,5 +1,5 @@
 server:
-  port: 8082
+  port: 8081
   shutdown: graceful
 
 spring:
@@ -26,9 +26,10 @@ veterinaria:
     jwt:
       secret: ${JWT_SECRET}
       expiration-ms: ${JWT_EXPIRATION:3600000}
+    internal-key: ${INTERNAL_SERVICE_KEY}
   clients:
     user-service:
-      base-url: ${USER_SERVICE_URL:http://localhost:8083}
+      base-url: ${USER_SERVICE_URL:http://localhost:8082}
     connect-timeout-ms: 2000
     read-timeout-ms: 5000
 
