@@ -4,7 +4,7 @@ services:
     container_name: vet-mysql
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Define MYSQL_ROOT_PASSWORD en .env}
-      MYSQL_DATABASE: vet_usuarios
+      MYSQL_DATABASE: vet_usuarios_in5am
       MYSQL_USER: ${DB_USERNAME:-vet}
       MYSQL_PASSWORD: ${DB_PASSWORD:?Define DB_PASSWORD en .env}
     ports:
