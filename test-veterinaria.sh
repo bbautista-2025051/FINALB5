@@ -11,7 +11,7 @@
 # ============================================================
 set -u
 
-BASE_URL="${BASE_URL:-http://localhost:8088}"
+BASE_URL="${BASE_URL:-http://localhost:8090}"
 TMP_BODY="$(mktemp)"
 trap 'rm -f "$TMP_BODY"' EXIT
 
@@ -53,13 +53,16 @@ extraer() { # campo_del_json (primer nivel)
   echo "$CUERPO" | sed -n "s/.*\"$1\":\"\{0,1\}\([^\",}]*\)\"\{0,1\}.*/\1/p" | head -n 1
 }
 
-fecha_futura() { # hora_local "10:00" -> yyyy-MM-ddTHH:mm:ss (mañana)
+# Dia futuro unico por ejecucion (evita chocar con citas de corridas previas en la BD local)
+DIAS_OFFSET=$(( 30 + ($(date +%s) % 3000) ))
+
+fecha_futura() { # hora_local "10:00" -> yyyy-MM-ddTHH:mm:ss en un dia futuro unico
   local hora="$1" salida
-  salida=$(date -u -d "+1 day $hora" +%Y-%m-%dT%H:%M:%S 2>/dev/null)
+  salida=$(date -u -d "+$DIAS_OFFSET day $hora" +%Y-%m-%dT%H:%M:%S 2>/dev/null)
   if [ -z "$salida" ]; then
-    local manana
-    manana=$(date -u -v+1d +%Y-%m-%d 2>/dev/null)
-    salida=$(date -u -v+1d -j -f "%Y-%m-%d %H:%M" "$manana $hora" +%Y-%m-%dT%H:%M:%S 2>/dev/null)
+    local dia
+    dia=$(date -u -v+"${DIAS_OFFSET}"d +%Y-%m-%d 2>/dev/null)
+    salida=$(date -u -v+"${DIAS_OFFSET}"d -j -f "%Y-%m-%d %H:%M" "$dia $hora" +%Y-%m-%dT%H:%M:%S 2>/dev/null)
   fi
   if [ -z "$salida" ]; then
     echo "${AMARILLO}No se pudo calcular la fecha con date(1)${SIN_COLOR}" >&2
@@ -78,21 +81,21 @@ peticion GET /actuator/health
 esperado 200 "Gateway y servicios arriba"
 
 # 1) Autenticación
-peticion POST /api/v1/auth/login '{"email":"admin@veterinaria.com","password":"Admin123!"}'
+peticion POST /api/v1/auth/login "" '{"email":"admin@veterinaria.com","password":"Admin123!"}'
 esperado 200 "Login admin"
 TOKEN_ADMIN=$(extraer token)
 
 peticion GET /api/v1/auth/me "$TOKEN_ADMIN"
 esperado 200 "GET /auth/me con token de admin"
 
-peticion POST /api/v1/auth/login '{"email":"admin@veterinaria.com","password":"clave-mala"}'
+peticion POST /api/v1/auth/login "" '{"email":"admin@veterinaria.com","password":"clave-mala"}'
 esperado 401 "Login con contraseña incorrecta → 401"
 
 peticion GET /api/v1/citas
 esperado 401 "Petición sin token → 401"
 
 EMAIL_E2E="e2e-$(date +%s)@test.com"
-peticion POST /api/v1/auth/registro \
+peticion POST /api/v1/auth/registro "" \
   "{\"nombre\":\"Cliente E2E\",\"telefono\":\"3009998888\",\"email\":\"$EMAIL_E2E\",\"password\":\"Cliente123!\",\"rol\":\"ADMIN\"}"
 esperado 201 "Registro público (rol ADMIN del body se ignora → CLIENTE)"
 TOKEN_NUEVO=$(extraer token)
@@ -107,11 +110,11 @@ else
 fi
 
 # 2) Tokens de los usuarios semilla
-peticion POST /api/v1/auth/login '{"email":"veterinario@veterinaria.com","password":"Vet12345!"}'
+peticion POST /api/v1/auth/login "" '{"email":"veterinario@veterinaria.com","password":"Vet12345!"}'
 esperado 200 "Login veterinario"
 TOKEN_VET=$(extraer token)
 
-peticion POST /api/v1/auth/login '{"email":"cliente@veterinaria.com","password":"Cliente123!"}'
+peticion POST /api/v1/auth/login "" '{"email":"cliente@veterinaria.com","password":"Cliente123!"}'
 esperado 200 "Login cliente"
 TOKEN_CLIENTE=$(extraer token)
 
@@ -119,7 +122,7 @@ peticion GET /api/v1/auth/me "$TOKEN_CLIENTE"
 CLIENTE_ID=$(extraer id)
 
 # 3) Mascotas
-peticion POST /api/v1/mascotas '{"nombre":"Firulais E2E","especie":"PERRO","raza":"Mestizo","edad":3}' "$TOKEN_CLIENTE"
+peticion POST /api/v1/mascotas "$TOKEN_CLIENTE" '{"nombre":"Firulais E2E","especie":"PERRO","raza":"Mestizo","edad":3}'
 esperado 201 "Cliente crea su mascota"
 MASCOTA_ID=$(extraer id)
 
@@ -142,20 +145,20 @@ esperado 200 "GET /auth/me del veterinario"
 VET_ID=$(extraer id)
 
 CUERPO_CITA="{\"mascotaId\":$MASCOTA_ID,\"veterinarioId\":$VET_ID,\"fechaHora\":\"$FECHA_A\",\"motivo\":\"Control general E2E\"}"
-peticion POST /api/v1/citas "$CUERPO_CITA" "$TOKEN_CLIENTE"
+peticion POST /api/v1/citas "$TOKEN_CLIENTE" "$CUERPO_CITA"
 esperado 201 "Cliente agenda cita con su veterinario"
 CITA_A=$(extraer id)
 
-peticion POST /api/v1/citas "$CUERPO_CITA" "$TOKEN_CLIENTE"
+peticion POST /api/v1/citas "$TOKEN_CLIENTE" "$CUERPO_CITA"
 esperado 409 "Solape de horario (mismo veterinario, ±30 min) → 409"
 
 CUERPO_CITA_B="{\"mascotaId\":$MASCOTA_ID,\"veterinarioId\":$VET_ID,\"fechaHora\":\"$FECHA_B\",\"motivo\":\"Segunda consulta E2E\"}"
-peticion POST /api/v1/citas "$CUERPO_CITA_B" "$TOKEN_CLIENTE"
+peticion POST /api/v1/citas "$TOKEN_CLIENTE" "$CUERPO_CITA_B"
 esperado 201 "Segunda cita del día"
 CITA_B=$(extraer id)
 
 CUERPO_CITA_C="{\"mascotaId\":$MASCOTA_ID,\"veterinarioId\":$VET_ID,\"fechaHora\":\"$FECHA_C\",\"motivo\":\"Tercera consulta\"}"
-peticion POST /api/v1/citas "$CUERPO_CITA_C" "$TOKEN_CLIENTE"
+peticion POST /api/v1/citas "$TOKEN_CLIENTE" "$CUERPO_CITA_C"
 esperado 409 "Máximo 2 citas pendientes por cliente y día → 409"
 
 FECHA_DIA="${FECHA_A%%T*}"
@@ -166,11 +169,11 @@ peticion GET "/api/v1/citas/$CITA_A" "$TOKEN_VET"
 esperado 200 "Veterinario consulta la cita"
 
 # 5) Expediente clínico (saga: guarda local y completa la cita vía servicio interno)
-CUERPO_EXP="{\"citaId\":$CITA_A,\"diagnostico\":\"Animal sano, sin observaciones relevantes\",\"tratamiento\":\"Vacunación al día, dieta balanceada\",\"pesoKg\":18.5}"
-peticion POST /api/v1/expedientes "$CUERPO_EXP" "$TOKEN_VET"
+CUERPO_EXP="{\"citaId\":$CITA_A,\"diagnostico\":\"Animal sano, sin hallazgos relevantes\",\"tratamiento\":\"Vacunas al dia, dieta balanceada\",\"pesoKg\":18.5}"
+peticion POST /api/v1/expedientes "$TOKEN_VET" "$CUERPO_EXP"
 esperado 201 "Veterinario registra el expediente de su cita"
 
-peticion POST /api/v1/expedientes "$CUERPO_EXP" "$TOKEN_VET"
+peticion POST /api/v1/expedientes "$TOKEN_VET" "$CUERPO_EXP"
 esperado 409 "Una cita no puede tener dos expedientes → 409"
 
 peticion GET "/api/v1/expedientes/mascotas/$MASCOTA_ID" "$TOKEN_CLIENTE"
@@ -183,7 +186,7 @@ else
 fi
 
 # 6) Cancelación con antelación (>2 h)
-peticion PATCH "/api/v1/citas/$CITA_B/cancelar" "" "$TOKEN_CLIENTE"
+peticion PATCH "/api/v1/citas/$CITA_B/cancelar" "$TOKEN_CLIENTE"
 esperado 200 "Cliente cancela su segunda cita con antelación"
 
 # 7) Autorización cruzada
