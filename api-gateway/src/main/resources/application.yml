@@ -14,23 +14,23 @@ spring:
             response-timeout: 10s
           routes:
             - id: auth-service
-              uri: ${AUTH_SERVICE_URI:http://auth-service:8081}
+              uri: ${AUTH_SERVICE_URI:http://localhost:8081}
               predicates:
                 - Path=/api/v1/auth/**
             - id: user-service
-              uri: ${USER_SERVICE_URI:http://user-service:8082}
+              uri: ${USER_SERVICE_URI:http://localhost:8082}
               predicates:
                 - Path=/api/v1/usuarios/**
             - id: mascota-service
-              uri: ${MASCOTA_SERVICE_URI:http://mascota-service:8083}
+              uri: ${MASCOTA_SERVICE_URI:http://localhost:8083}
               predicates:
                 - Path=/api/v1/mascotas/**
             - id: cita-service
-              uri: ${CITA_SERVICE_URI:http://cita-service:8084}
+              uri: ${CITA_SERVICE_URI:http://localhost:8084}
               predicates:
                 - Path=/api/v1/citas/**
             - id: expediente-service
-              uri: ${EXPEDIENTE_SERVICE_URI:http://expediente-service:8085}
+              uri: ${EXPEDIENTE_SERVICE_URI:http://localhost:8085}
               predicates:
                 - Path=/api/v1/expedientes/**
           globalcors:
