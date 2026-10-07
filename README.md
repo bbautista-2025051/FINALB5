@@ -2,7 +2,8 @@
 
 API en microservicios para la gestión de una clínica veterinaria: usuarios con roles
 (`ADMIN`, `VET`, `CLIENTE`), mascotas, citas médicas con reglas de negocio y expedientes
-clínicos. Spring Boot 3.5.16 · Java 21 · MySQL 8 · JWT + BCrypt · Docker · Swagger · pruebas JUnit 5 · k6.
+clínicos. Spring Boot 3.5.16 · Java 21 · MySQL 8 · JWT + BCrypt · Swagger · pruebas JUnit 5 · k6.
+Ejecución local (sin Docker).
 
 ---
 
@@ -24,8 +25,8 @@ clínicos. Spring Boot 3.5.16 · Java 21 · MySQL 8 · JWT + BCrypt · Docker ·
        └────────────▶└────────────┴────────────┴──────────────┘
                               ▼
                       ┌──────────────┐
-                      │  MySQL 8.4   │  vet_usuarios / vet_mascotas /
-                      │    :3306     │  vet_citas / vet_expedientes
+                      │  MySQL 8     │  vet_usuarios_in5am / vet_mascotas_in5am /
+                      │    :3306     │  vet_citas_in5am / vet_expedientes_in5am
                       └──────────────┘
 ```
 
@@ -33,10 +34,10 @@ clínicos. Spring Boot 3.5.16 · Java 21 · MySQL 8 · JWT + BCrypt · Docker ·
 |---|---|---|---|
 | `api-gateway` | **8090** | — | Punto único de entrada, CORS, enrutado |
 | `auth-service` | 8081 | — | Registro, login, emisión/validación de JWT |
-| `user-service` | 8082 | `vet_usuarios` | CRUD de usuarios (dueño de la tabla `usuarios`, BCrypt) |
-| `mascota-service` | 8083 | `vet_mascotas` | CRUD de mascotas |
-| `cita-service` | 8084 | `vet_citas` | Citas médicas y reglas de negocio |
-| `expediente-service` | 8085 | `vet_expedientes` | Expedientes clínicos |
+| `user-service` | 8082 | `vet_usuarios_in5am` | CRUD de usuarios (dueño de la tabla `usuarios`, BCrypt) |
+| `mascota-service` | 8083 | `vet_mascotas_in5am` | CRUD de mascotas |
+| `cita-service` | 8084 | `vet_citas_in5am` | Citas médicas y reglas de negocio |
+| `expediente-service` | 8085 | `vet_expedientes_in5am` | Expedientes clínicos |
 
 > El gateway usa el **8090** porque el 8080 está ocupado en la máquina de desarrollo.
 
@@ -50,6 +51,7 @@ Los endpoints `/internal/**` se protegen con el header `X-Internal-Key`
 ## 2. Endpoints principales
 
 Todos bajo el gateway `http://localhost:8090` (Swagger directo en el puerto de cada servicio).
+Los cuerpos JSON se atienden en **UTF-8**.
 
 ### auth-service
 | Método | Ruta | Auth | Descripción |
@@ -108,34 +110,54 @@ Todos bajo el gateway `http://localhost:8090` (Swagger directo en el puerto de c
   "path": "/api/v1/citas" }
 ```
 `400` validación (con `details[]`), `401` JWT/credenciales, `403` rol/propiedad,
-`404` no existe, `409` conflicto, `422` regla de negocio, `503` dependencia caída, `500` sin stack trace.
+`404` no existe, `405` método no soportado, `409` conflicto, `415` media type no soportado,
+`422` regla de negocio, `503` dependencia caída, `500` sin stack trace.
 
 ---
 
-## 3. Ejecución
+## 3. Ejecución (local, sin Docker)
 
-### 3.1 Docker (recomendado)
+### 3.1 Requisitos
+
+- **JDK 21** (`java -version`).
+- **MySQL 8** local en `localhost:3306`. No hace falta crear los esquemas a mano: se crean
+  solos al arrancar cada servicio (`createDatabaseIfNotExist=true`).
+
+Incluye el **Maven Wrapper**, así que **no** es necesario instalar Maven.
+
+### 3.2 Puesta en marcha
+
+Los valores por defecto apuntan a MySQL local (`root` / `GAMSTERfredy1`) y a claves
+JWT/internas de desarrollo, por lo que **no hay que configurar variables** para probar en
+la máquina local.
 
 ```bash
-cp .env.example .env      # ¡cambia las contraseñas y el JWT_SECRET!
-docker compose up --build -d
-docker compose ps
+# Windows (PowerShell o CMD)
+mvnw.cmd -B clean install -DskipTests
+
+# Linux / macOS / Git Bash
+./mvnw -B clean install -DskipTests
+./run-local.sh          # levanta los 6 servicios y espera a que estén listos
 ```
 
-- MySQL crea los 4 esquemas con `docker/mysql/init/01-init.sql`.
+Si se prefiere arrancar los servicios a mano (Windows), un proceso por cada uno:
+
+```powershell
+java -jar user-service\target\user-service-1.0.0-SNAPSHOT.jar
+java -jar auth-service\target\auth-service-1.0.0-SNAPSHOT.jar
+java -jar mascota-service\target\mascota-service-1.0.0-SNAPSHOT.jar
+java -jar cita-service\target\cita-service-1.0.0-SNAPSHOT.jar
+java -jar expediente-service\target\expediente-service-1.0.0-SNAPSHOT.jar
+java -jar api-gateway\target\api-gateway-1.0.0-SNAPSHOT.jar
+```
+
+- `createDatabaseIfNotExist=true` crea los cuatro esquemas en el primer arranque.
 - `user-service` siembra los usuarios iniciales con `data.sql` (idempotente).
-- Swagger: `http://localhost:8081/swagger-ui.html` … `:8085` y `http://localhost:8090/actuator/health` para el gateway.
-
-### 3.2 Local (sin Docker)
-
-Requiere MySQL con los 4 esquemas y las variables de `.env` exportadas
-(`DB_HOST`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`, `INTERNAL_SERVICE_KEY`):
-
-```bash
-mvn -B clean install -DskipTests
-java -jar user-service/target/user-service-1.0.0-SNAPSHOT.jar
-# … igual para auth, mascota, cita, expediente y api-gateway
-```
+- Swagger: `http://localhost:8081/swagger-ui.html` … `:8085` y
+  `http://localhost:8090/actuator/health` para el gateway.
+- Para cambiar credenciales de MySQL, el `JWT_SECRET`, etc., se puede copiar
+  `.env.example` a `.env` y editarlo; `run-local.sh` lo carga si existe. Sin `.env`
+  rigen los valores por defecto de desarrollo.
 
 ### 3.3 Usuarios semilla
 
@@ -147,18 +169,23 @@ java -jar user-service/target/user-service-1.0.0-SNAPSHOT.jar
 
 ---
 
-## 4. Configuración (sin secretos en el repositorio)
+## 4. Configuración (valores de desarrollo por defecto)
 
-Todo secreto llega por variables de entorno (`.env` está en `.gitignore`; usa `.env.example`):
+Todos los parámetros se pueden sobreescribir por variables de entorno (`.env` está en
+`.gitignore`; usa `.env.example`). Los defaults permiten arrancar sin configurar nada en
+local:
 
 | Variable | Uso | Default |
 |---|---|---|
-| `JWT_SECRET` | Firma HS256 (mínimo 32 caracteres) | — (obligatoria) |
+| `JWT_SECRET` | Firma HS256 (mínimo 32 caracteres) | valor local de desarrollo |
 | `JWT_EXPIRATION` | Validez del token en ms | `3600000` |
-| `INTERNAL_SERVICE_KEY` | Header `X-Internal-Key` entre servicios | — (obligatoria) |
-| `DB_HOST` / `DB_PORT` / `DB_USERNAME` / `DB_PASSWORD` | Conexión MySQL | `localhost` / `3306` / `vet` / — |
+| `INTERNAL_SERVICE_KEY` | Header `X-Internal-Key` entre servicios | valor local de desarrollo |
+| `DB_HOST` / `DB_PORT` / `DB_USERNAME` / `DB_PASSWORD` | Conexión MySQL | `localhost` / `3306` / `root` / `GAMSTERfredy1` |
 | `GATEWAY_PORT` | Puerto publicado del gateway | `8090` |
 | `CORS_ALLOWED_ORIGINS` | Orígenes permitidos | `localhost:4200,localhost:3000` |
+
+> Para despliegue real, define `JWT_SECRET`, `INTERNAL_SERVICE_KEY` y las credenciales de
+> MySQL con valores propios; los defaults son solo para desarrollo local.
 
 ---
 
@@ -167,7 +194,8 @@ Todo secreto llega por variables de entorno (`.env` está en `.gitignore`; usa `
 ### Unitarias + integración (103 pruebas, 0 fallos)
 
 ```bash
-mvn -B clean verify
+mvnw.cmd -B clean verify      # Windows
+./mvnw -B clean verify        # Linux / macOS / Git Bash
 ```
 
 | Módulo | Pruebas |
@@ -187,10 +215,16 @@ Con el stack levantado:
 # o BASE_URL=http://otro-host:8090 ./test-veterinaria.sh
 ```
 
-Cubre: disponibilidad, login/logout de roles, registro (rol forzado a `CLIENTE`),
+Cubre: disponibilidad, login por roles, registro (rol forzado a `CLIENTE`),
 autorizaciones `401/403`, mascotas, solape de citas `409`, límite de 2 pendientes/día,
 agenda del veterinario, expediente (y su conflicto), cancelación con antelación e
 historial. Sale con código distinto de 0 si algo falla.
+
+Prueba complementaria (registro, mascota, control de acceso `403` y estrés de agenda):
+
+```bash
+./test-api2.sh
+```
 
 ### Carga (k6)
 
@@ -199,13 +233,17 @@ k6 run k6/carga.js
 k6 run -e VUS=10 -e DURACION=30s k6/carga.js
 ```
 
-Umbrales: `<1%` de fallos HTTP, `p(95) < 1000 ms`, cero logins fallidos
-(métricas propias `login_fallidos` y `operaciones_fallidas`).
+Umbrales: `p(95) < 1000 ms` y cero logins/operaciones fallidas (métricas propias
+`login_fallidos` y `operaciones_fallidas`). El `401` de la comprobación “sin token” se
+marca como estado esperado para que no cuente como fallo HTTP.
 
 ---
 
 ## 6. Decisiones y restricciones documentadas
 
+- **Ejecución local, sin Docker**: los servicios se arrancan con el Maven Wrapper y
+  MySQL local; los esquemas se autocrean y los valores sensibles tienen defaults de
+  desarrollo.
 - **BD por servicio**: cada servicio solo conoce su esquema; no hay acceso cruzado a
   tablas. Las referencias entre servicios se resuelven por API interna
   (`/internal/**`) y se **denormalizan** en cada base: `citas.cliente_id`,
@@ -213,8 +251,8 @@ Umbrales: `<1%` de fallos HTTP, `p(95) < 1000 ms`, cero logins fallidos
   `mascotas.cliente_nombre` (evita N+1 en listados).
 - **BCrypt solo en `user-service`**: `auth-service` no tiene base de datos; delega la
   verificación de credenciales y el hash nunca sale de `user-service`.
-- **`ddl-auto=update`**: el esquema lo genera Hibernate al arrancar cada servicio; el
-  init SQL solo crea esquemas y permisos. En producción usar migraciones (Flyway/Liquibase).
+- **`ddl-auto=update`**: el esquema lo genera Hibernate al arrancar cada servicio. En
+  producción usar migraciones (Flyway/Liquibase).
 - **Puertos**: 8090 gateway (8080 ocupado en la máquina), servicios 8081–8085.
 - **Swagger por servicio** (el gateway solo enruta `/api/v1/**`).
 - Los endpoints de `user-service` mantienen el contrato acordado aunque el rol efectivo
