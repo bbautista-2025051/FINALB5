@@ -13,6 +13,10 @@ import http from 'k6/http';
 import { check, sleep, group } from 'k6';
 import { Counter, Trend } from 'k6/metrics';
 
+// El flujo incluye a propósito una llamada sin token que responde 401.
+// Se marca como esperada para que no cuente como fallo en http_req_failed.
+http.setResponseCallback(http.expectedStatuses(200, 201, 401));
+
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:8090';
 const DURACION = __ENV.DURACION || '1m';
 const VUS = Number(__ENV.VUS || 5);

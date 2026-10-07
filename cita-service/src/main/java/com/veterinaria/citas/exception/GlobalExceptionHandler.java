@@ -12,9 +12,13 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -95,6 +99,29 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiError> parametroInvalido(MethodArgumentTypeMismatchException ex, HttpServletRequest req) {
         return responder(HttpStatus.BAD_REQUEST,
                 "Parámetro '" + ex.getName() + "' con valor inválido", req);
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiError> rutaNoEncontrada(NoResourceFoundException ex, HttpServletRequest req) {
+        return responder(HttpStatus.NOT_FOUND, "Recurso no encontrado", req);
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ApiError> metodoNoSoportado(HttpRequestMethodNotSupportedException ex, HttpServletRequest req) {
+        return responder(HttpStatus.METHOD_NOT_ALLOWED,
+                "Método " + ex.getMethod() + " no soportado para esta ruta", req);
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<ApiError> tipoContenidoNoSoportado(HttpMediaTypeNotSupportedException ex, HttpServletRequest req) {
+        return responder(HttpStatus.UNSUPPORTED_MEDIA_TYPE,
+                "Tipo de contenido no soportado", req);
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ApiError> parametroFaltante(MissingServletRequestParameterException ex, HttpServletRequest req) {
+        return responder(HttpStatus.BAD_REQUEST,
+                "Falta el parámetro '" + ex.getParameterName() + "'", req);
     }
 
     @ExceptionHandler(Exception.class)

@@ -6,9 +6,9 @@ spring:
   application:
     name: expediente-service
   datasource:
-    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/vet_expedientes_in5am?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-    username: ${DB_USERNAME:vet}
-    password: ${DB_PASSWORD}
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/vet_expedientes_in5am?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&createDatabaseIfNotExist=true
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:GAMSTERfredy1}
     hikari:
       pool-name: expediente-service-hikari
       maximum-pool-size: ${DB_POOL_SIZE:10}
@@ -44,9 +44,9 @@ info:
 veterinaria:
   security:
     jwt:
-      secret: ${JWT_SECRET}
+      secret: ${JWT_SECRET:vet-in5am-clave-secreta-local-para-desarrollo-2026}
       expiration-ms: ${JWT_EXPIRATION:3600000}
-    internal-key: ${INTERNAL_SERVICE_KEY}
+    internal-key: ${INTERNAL_SERVICE_KEY:vet-in5am-internal-key-local}
   clients:
     cita-service:
       base-url: ${CITA_SERVICE_URL:http://localhost:8084}
