@@ -1,0 +1,5 @@
+# Los scripts de shell deben conservar finales de línea LF para ejecutarse con bash.
+*.sh text eol=lf
+mvnw text eol=lf
+# Los .cmd de Windows esperan CRLF.
+*.cmd text eol=crlf

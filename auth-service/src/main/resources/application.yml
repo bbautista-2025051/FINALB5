@@ -24,9 +24,9 @@ info:
 veterinaria:
   security:
     jwt:
-      secret: ${JWT_SECRET}
+      secret: ${JWT_SECRET:vet-in5am-clave-secreta-local-para-desarrollo-2026}
       expiration-ms: ${JWT_EXPIRATION:3600000}
-    internal-key: ${INTERNAL_SERVICE_KEY}
+    internal-key: ${INTERNAL_SERVICE_KEY:vet-in5am-internal-key-local}
   clients:
     user-service:
       base-url: ${USER_SERVICE_URL:http://localhost:8082}
